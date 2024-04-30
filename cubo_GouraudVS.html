@@ -1,0 +1,541 @@
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=windows-1252">
+    <script src="twgl.js-master/dist/4.x/twgl-full.js"></script>
+</head>
+
+<body>
+    <doctype html="">
+        <!--Nuno Garcia, Faculdade de Ciências, Universidade de Lisboa, 2021-->
+        <title>Projeto</title>
+
+        <canvas id="canvas" style = "width:  100%;height: 100%; background-image: url(textures/Space.jpg); background-size:cover" display: block;></canvas>
+        <script id="vs" type="notjs">
+            uniform mat4 u_worldViewProjection;
+
+            attribute vec4 position;
+
+            attribute vec2 texcoord;
+            varying vec2 v_texcoord;
+
+            uniform mat4 u_worldInverseTranspose;
+            uniform vec3 u_lightWorldPosition;
+            varying vec3 v_normal;
+            attribute vec3 normal;
+            varying vec3 v_surfaceToLight;
+            uniform mat4 u_world;
+
+            uniform vec3 u_viewWorldPosition;
+            varying vec3 v_surfaceToView;
+            
+            
+
+            uniform sampler2D u_texture;
+            varying vec4 vcolor;
+
+
+            void main() {
+              v_texcoord = texcoord;
+              gl_Position = u_worldViewProjection * position;
+            
+
+              //Iluminação Difussa
+              v_normal = mat3(u_worldInverseTranspose) * normal;
+              vec3 surfaceWorldPosition = (u_world * position).xyz;
+              v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition;
+              
+              //Iluminação Specular
+              v_surfaceToView = u_viewWorldPosition - surfaceWorldPosition;
+              
+
+              vcolor = texture2D(u_texture, v_texcoord);
+             
+              //Ilumincação Difusa
+              vec3 normal = normalize(v_normal);
+              vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+              vec4 light = dot(normal, surfaceToLightDirection) * texture2D(u_texture, v_texcoord) * 1.0;
+              light = vec4(light[0], light[1], light[2], 1);
+ 
+              //Iluminação Specular
+              vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+              vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+ 
+              float specular = dot(normal, halfVector);
+ 
+             // Com este 0.4 simulamos o Ambient light, e depois somamos a specular light
+             vec4 light2 = light * 0.6 + 0.4 * texture2D(u_texture, v_texcoord) + 1.0 * specular * texture2D(u_texture, v_texcoord);   
+            
+             vcolor = vec4(light2[0], light2[1], light2[2], 1); 
+            }
+
+        </script>
+        <script id="fs" type="notjs">
+            precision mediump float;
+            varying vec4 vcolor;
+
+
+            void main() {
+                gl_FragColor = vcolor;
+            }
+
+        </script>
+        <script>
+            const m4 = twgl.m4;
+            const gl = document.querySelector("canvas").getContext("webgl");
+            const programInfo = twgl.createProgramInfo(gl, ["vs", "fs"]);
+
+
+            var tex_sol = twgl.createTexture(gl, { src: 'sol.png' });
+            var tex_mercurio = twgl.createTexture(gl, { src: "mercurio.jpg" });
+            var tex_venus = twgl.createTexture(gl, { src: 'venus.jpg' });
+            var tex_earth = twgl.createTexture(gl, { src: 'terra.jpg' });
+            var tex_moon = twgl.createTexture(gl, { src: 'moon.jpg' });
+            var tex_marte = twgl.createTexture(gl, { src: 'marte.jpg' });
+            var tex_jupiter = twgl.createTexture(gl, { src: 'jupiter.png' });
+            var tex_saturno = twgl.createTexture(gl, { src: 'saturno.jpg' });
+            var tex_aneisSaturno = twgl.createTexture(gl, { src: 'aneisSaturno.jpg' });
+            var tex_urano = twgl.createTexture(gl, { src: 'urano.jpg' });
+            var tex_neptuno = twgl.createTexture(gl, { src: 'neptuno.jpg' });
+
+
+            //sol
+            const solBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 3, 30, 30);
+            const uniforms_sun = {};
+            //& Orbita
+            const solOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 40, 0.06, 60, 60);
+            const uniforms_solOrbita = {};
+            
+            //mercurio
+            const mercurioBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 0.5, 30, 30);
+            const uniforms_mercurio = {};
+             //& Orbita
+            const mercurioOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 7, 0.06, 60, 60);
+            const uniforms_mercurioOrbita = {};
+
+            //venus
+            const venusBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 0.7, 30, 30);
+            const uniforms_venus = {};
+             //& Orbita
+            const venusOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 13, 0.06, 60, 60);
+            const uniforms_venusOrbita = {};
+
+            //terra
+            const terraBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 30, 30);
+            const uniforms_earth = {};
+             //& Orbita
+            const terraOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 18, 0.06, 60, 60);
+            const uniforms_terraOrbita = {};
+
+            //lua
+            const luaBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 0.3, 30, 30);
+            const uniforms_lua = {};
+             //& Orbita
+            const luaOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 2, 0.06, 60, 60);
+            const uniforms_luaOrbita = {};
+
+            //marte
+            const marteBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 0.9, 30, 30);
+            const uniforms_marte = {};
+             //& Orbita
+            const marteOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 23, 0.06, 60, 60);
+            const uniforms_marteOrbita = {};
+
+            //jupiter
+            const jupiterBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1.8, 30, 30);
+            const uniforms_jupiter = {};
+             //& Orbita
+            const jupiterOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 27, 0.06, 60, 60);
+            const uniforms_jupiterOrbita = {};
+            
+            //Saturno
+            const saturnoBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1.2, 30, 30);
+            const uniforms_saturno = {};
+            //& Orbita
+            const saturnoOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 30, 0.06, 60, 60);
+            const uniforms_saturnoOrbita = {};
+
+            //Aneis Saturno
+            const aneisSaturnoBufferInfo = twgl.primitives.createDiscBufferInfo(gl, 2.0, 60, 1, 1.5);
+            const uniforms_aneisSaturno = {};
+
+            //Urano
+            const uranoBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 1, 30, 30);
+            const uniforms_urano = {};
+            //& Orbita
+            const uranoOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 35, 0.06, 60, 60);
+            const uniforms_uranoOrbita = {};
+            
+            
+            //Neptuno
+            const neptunoBufferInfo = twgl.primitives.createSphereBufferInfo(gl, 0.9, 30, 30);
+            const uniforms_neptuno = {};
+            //& Orbita
+            const neptunoOrbitaBufferInfo = twgl.primitives.createTorusBufferInfo(gl, 40, 0.06, 60, 60);
+            //gl, radius, thickness, radialSubdivisions, bodySubdivisions, startAngleopt, endAngleopt)
+            const uniforms_neptunoOrbita = {};
+
+            uniforms_sun.u_texture = tex_sol;
+            uniforms_mercurio.u_texture = tex_mercurio;
+            uniforms_venus.u_texture = tex_venus;
+            uniforms_earth.u_texture = tex_earth;
+            uniforms_lua.u_texture = tex_moon;
+            uniforms_marte.u_texture = tex_marte;
+            uniforms_jupiter.u_texture = tex_jupiter;
+            uniforms_saturno.u_texture = tex_saturno;
+            uniforms_aneisSaturno.u_texture = tex_aneisSaturno;
+            uniforms_urano.u_texture = tex_urano;
+            uniforms_neptuno.u_texture = tex_neptuno;
+
+
+
+
+
+            function render(time) {
+
+
+                //cenas do viewport
+                twgl.resizeCanvasToDisplaySize(gl.canvas);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+
+                //n vou mduar
+                gl.enable(gl.DEPTH_TEST);
+                gl.enable(gl.CULL_FACE);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
+                //tbm nao (eye, target, up)
+                const fov = 30 * Math.PI / 180;
+                const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+                const zNear = 0.5;
+                const zFar = 1000;
+                const projection = m4.perspective(fov, aspect, zNear, zFar);
+                const eye = [0, 60, 100];
+                const target = [0, 0, 0];
+                const up = [0, 1, 0];
+
+                const camera = m4.lookAt(eye, target, up);
+                const view = m4.inverse(camera);
+                const viewProjection = m4.multiply(projection, view);
+                const world = m4.identity();
+
+
+
+       
+
+                //Sol 
+                uniforms_sun.u_world = world;
+                var rotacaoSol = m4.rotationY (0.0001 * time);
+
+
+                uniforms_sun.u_world = m4.multiply(m4.identity(), rotacaoSol);
+                uniforms_sun.u_worldViewProjection = m4.multiply(viewProjection, uniforms_sun.u_world);
+                
+                // Usado para calcular a normal
+                uniforms_sun.u_worldInverseTranspose = m4.inverse(m4.transpose(m4.scale(uniforms_sun.u_world, [-1,-1,-1])));
+                uniforms_sun.u_camera_pos = eye;
+                uniforms_sun.u_lightWorldPosition = [0,0,0];
+  
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, solBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_sun);
+                twgl.drawBufferInfo(gl, solBufferInfo);
+
+
+                //Mercurio
+                var orbita = m4.rotationY (0.0002 * time);
+                var translacao = m4.translation([7,0,0]);
+        
+                var rotation = m4.multiply (orbita, translacao, orbita);
+
+                uniforms_mercurio.u_world = m4.multiply(m4.identity(), rotation);
+                uniforms_mercurio.u_worldViewProjection = m4.multiply(viewProjection, uniforms_mercurio.u_world);
+                // Usado para calcular a normal
+                uniforms_mercurio.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_mercurio.u_world));
+                uniforms_mercurio.u_camera_pos = eye;
+                uniforms_mercurio.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, mercurioBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_mercurio);
+                twgl.drawBufferInfo(gl, mercurioBufferInfo);
+
+                //Torus Mercurio
+                uniforms_mercurioOrbita.u_world = world;
+                uniforms_mercurioOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_mercurioOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, mercurioOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_mercurioOrbita);
+                twgl.drawBufferInfo(gl, mercurioOrbitaBufferInfo);
+
+                //Venus
+                var orbita3 = m4.rotationY (0.0003 * time);
+                var translacao3 = m4.translation([13,0,0]);
+        
+                var rotation3 = m4.multiply (orbita3 , translacao3, orbita3);
+
+                
+                uniforms_venus.u_world = m4.multiply(m4.identity(), rotation3);
+                uniforms_venus.u_worldViewProjection = m4.multiply(viewProjection, uniforms_venus.u_world);
+                // Usado para calcular a normal
+                uniforms_venus.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_venus.u_world));
+                uniforms_venus.u_camera_pos = eye;
+                uniforms_venus.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, venusBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_venus);
+                twgl.drawBufferInfo(gl, venusBufferInfo);
+
+                //Torus Venus
+                uniforms_venusOrbita.u_world = world;
+                uniforms_venusOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_venusOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, venusOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_venusOrbita);
+                twgl.drawBufferInfo(gl, venusOrbitaBufferInfo);
+ 
+                //terra
+                var orbita = m4.rotationY (0.0001 * time);
+                var translacao = m4.translation([18,0,0]);
+        
+                var rotation = m4.multiply(orbita, translacao);
+                var rotacaoTerra = m4.multiply(rotation, orbita);
+                
+                
+                uniforms_earth.u_world = m4.multiply(m4.identity(), rotacaoTerra);
+                uniforms_earth.u_worldViewProjection = m4.multiply(viewProjection, uniforms_earth.u_world);
+                // Usado para calcular a normal
+                uniforms_earth.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_earth.u_world));
+                uniforms_earth.u_camera_pos = eye;
+                uniforms_earth.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, terraBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_earth);
+                twgl.drawBufferInfo(gl, terraBufferInfo);
+
+                //Torus Terra
+                uniforms_terraOrbita.u_world = world;
+                uniforms_terraOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_terraOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, terraOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_terraOrbita);
+                twgl.drawBufferInfo(gl, terraOrbitaBufferInfo);
+
+ 
+                //Lua 
+                var rotacaoLua = m4.rotationY(0.0017 * time);
+                var translacaoLua = m4.translation([2,0,0]);
+                
+                var orbitaLua = m4.multiply(rotacaoLua, translacaoLua);                
+                var orbitaLuaFinal = m4.multiply(rotation, orbitaLua);
+
+                
+                uniforms_lua.u_world = orbitaLuaFinal;
+                uniforms_lua.u_worldViewProjection = m4.multiply(viewProjection, uniforms_lua.u_world);
+                // Usado para calcular a normal
+                uniforms_lua.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_lua.u_world));
+                uniforms_lua.u_camera_pos = eye;
+                uniforms_lua.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, luaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_lua);
+                twgl.drawBufferInfo(gl, luaBufferInfo);
+
+                //Torus Lua
+
+                var orbitaLuaOrbitaFinal = m4.multiply(rotation, orbita);
+
+                uniforms_luaOrbita.u_world = orbitaLuaOrbitaFinal;
+                uniforms_luaOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_luaOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, luaOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_luaOrbita);
+                twgl.drawBufferInfo(gl, luaOrbitaBufferInfo);
+
+
+                //Marte
+                var orbita4 = m4.rotationY (0.0003 * time);
+                var translacao4 = m4.translation([23,0,0]);
+        
+                var rotation4 = m4.multiply (orbita4 , translacao4);
+                
+                
+                uniforms_marte.u_world = m4.multiply(m4.identity(), rotation4);
+                uniforms_marte.u_worldViewProjection = m4.multiply(viewProjection, uniforms_marte.u_world);
+                // Usado para calcular a normal
+                uniforms_marte.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_marte.u_world));
+                uniforms_marte.u_camera_pos = eye;
+                uniforms_marte.u_lightWorldPosition = [0,0,0];
+                
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, marteBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_marte);
+                twgl.drawBufferInfo(gl, marteBufferInfo);
+
+                //Torus Marte
+                uniforms_marteOrbita.u_world = world;
+                uniforms_marteOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_marteOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, marteOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_marteOrbita);
+                twgl.drawBufferInfo(gl, marteOrbitaBufferInfo);
+
+                //Jupiter
+                var orbita_jupiter = m4.rotationY (0.0004 * time);
+                var translacao_jupiter = m4.translation([27,0,0]);
+        
+                var rotation_jupiter = m4.multiply (orbita_jupiter , translacao_jupiter);
+
+                
+                uniforms_jupiter.u_world = m4.multiply(m4.identity(), rotation_jupiter);
+                uniforms_jupiter.u_worldViewProjection = m4.multiply(viewProjection, uniforms_jupiter.u_world);
+                // Usado para calcular a normal
+                uniforms_jupiter.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_jupiter.u_world));
+                uniforms_jupiter.u_camera_pos = eye;
+                uniforms_jupiter.u_lightWorldPosition = [0,0,0];
+
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, jupiterBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_jupiter);
+                twgl.drawBufferInfo(gl, jupiterBufferInfo);
+
+                //Torus Jupiter
+                uniforms_jupiterOrbita.u_world = world;
+                uniforms_jupiterOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_jupiterOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, jupiterOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_jupiterOrbita);
+                twgl.drawBufferInfo(gl, jupiterOrbitaBufferInfo);
+
+                //Saturno
+                var orbita_saturno = m4.rotationY (0.0005 * time);
+                var translacao_saturno = m4.translation([30,0,0]);
+        
+                var rotation_saturno = m4.multiply (orbita_saturno, translacao_saturno);
+
+                
+                uniforms_saturno.u_world = m4.multiply(m4.identity(), rotation_saturno);
+                uniforms_saturno.u_worldViewProjection = m4.multiply(viewProjection, uniforms_saturno.u_world);
+                // Usado para calcular a normal
+                uniforms_saturno.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_saturno.u_world));
+                uniforms_saturno.u_camera_pos = eye;
+                uniforms_saturno.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, saturnoBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_saturno);
+                twgl.drawBufferInfo(gl, saturnoBufferInfo);
+
+                //Torus Saturno
+                uniforms_saturnoOrbita.u_world = world;
+                uniforms_saturnoOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_saturnoOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, saturnoOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_saturnoOrbita);
+                twgl.drawBufferInfo(gl, saturnoOrbitaBufferInfo);
+
+                //Aneis Saturno
+                var orbita_aneisSaturno = m4.rotationY (0.00065 * time);
+                
+                var rotation = m4.rotationZ(0.5);
+
+                var rotation_aneisSaturno = m4.multiply (rotation_saturno, orbita_aneisSaturno);
+                var rotation_aneisSaturno = m4.multiply (rotation_saturno, rotation);
+
+                uniforms_aneisSaturno.u_world = m4.multiply(m4.identity(), rotation_aneisSaturno);;
+                uniforms_aneisSaturno.u_worldViewProjection = m4.multiply(viewProjection, uniforms_aneisSaturno.u_world);
+                // Usado para calcular a normal
+                uniforms_aneisSaturno.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_aneisSaturno.u_world));
+                uniforms_aneisSaturno.u_camera_pos = eye;
+                uniforms_aneisSaturno.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, aneisSaturnoBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_aneisSaturno);
+                twgl.drawBufferInfo(gl, aneisSaturnoBufferInfo);
+
+                //Urano
+                var orbita_urano = m4.rotationY (0.0008 * time);
+                var translacao_urano = m4.translation([35,0,0]);
+        
+                var rotation_urano = m4.multiply (orbita_urano , translacao_urano, orbita_urano);
+
+                
+                uniforms_urano.u_world = m4.multiply(m4.identity(), rotation_urano);
+                uniforms_urano.u_worldViewProjection = m4.multiply(viewProjection, uniforms_urano.u_world);
+                // Usado para calcular a normal
+                uniforms_urano.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_urano.u_world));
+                uniforms_urano.u_camera_pos = eye;
+                uniforms_urano.u_lightWorldPosition = [0,0,0];
+
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, uranoBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_urano);
+                twgl.drawBufferInfo(gl, uranoBufferInfo);
+
+                //Torus Urano
+                uniforms_uranoOrbita.u_world = world;
+                uniforms_uranoOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_uranoOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, uranoOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_uranoOrbita);
+                twgl.drawBufferInfo(gl, uranoOrbitaBufferInfo);
+
+                //Neptuno
+                var orbita_neptuno = m4.rotationY (0.0009 * time);
+                var translacao_neptuno = m4.translation([40,0,0]);
+        
+                var rotation_neptuno = m4.multiply (orbita_neptuno , translacao_neptuno, orbita_neptuno);
+
+                
+                uniforms_neptuno.u_world = m4.multiply(m4.identity(), rotation_neptuno);
+                uniforms_neptuno.u_worldViewProjection = m4.multiply(viewProjection, uniforms_neptuno.u_world);
+                // Usado para calcular a normal
+                uniforms_neptuno.u_worldInverseTranspose = m4.inverse(m4.transpose(uniforms_neptuno.u_world));
+                uniforms_neptuno.u_camera_pos = eye;
+                uniforms_neptuno.u_lightWorldPosition = [0,0,0];
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, neptunoBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_neptuno);
+                twgl.drawBufferInfo(gl, neptunoBufferInfo);
+                
+
+                //Torus Neptuno
+                uniforms_neptunoOrbita.u_world = world;
+                uniforms_neptunoOrbita.u_worldViewProjection = m4.multiply(viewProjection, uniforms_neptunoOrbita.u_world);
+
+                gl.useProgram(programInfo.program);
+                twgl.setBuffersAndAttributes(gl, programInfo, neptunoOrbitaBufferInfo);
+                twgl.setUniforms(programInfo, uniforms_neptunoOrbita);
+                twgl.drawBufferInfo(gl, neptunoOrbitaBufferInfo);
+
+/* Tentativa de fazer extra tecla O
+                canvas.addEventListener('keydown', (e) => {
+                    draw(`keyCode: ${e.keyCode}`);
+                });
+                console.log(`keyCode: ${e.keyCode}`);
+*/
+
+
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        </script>
+</body>
+
+</html>
